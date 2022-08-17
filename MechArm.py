@@ -9,6 +9,10 @@ BAUD = 115200
 
 # Servo Pins (Digital)
 ShoulderYaw = 4
+ShoulderPitch = 5
+ElbowPitch = 6
+WristRoll = 7
+ServoIDRef = [ShoulderYaw, ShoulderPitch, ElbowPitch, WristRoll]
 
 try:
     board = Arduino(SERVO_COM)
@@ -29,10 +33,10 @@ except:
 def clamp(val, minimum, maximum):
     return max(minimum, min(val, maximum))
 
-def shoulderServos(yaw, pitch, roll): 
-    pitch = clamp(pitch, 0, 180)
-    board.digital[ShoulderYaw].mode = SERVO
-    board.digital[ShoulderYaw].write(clamp((90 + yaw), 0, 200))
+def alignServo(id, reading): 
+    reading = clamp(reading + 90, 0, 180)
+    board.digital[ServoIDRef[id]].mode = SERVO
+    board.digital[ServoIDRef[id]].write(reading)
 
 while True:
     buffer.flushInput()
@@ -46,11 +50,19 @@ while True:
         pitch = float(gyroData[2])
         roll = float(gyroData[3])
 
+        print("Yaw: " + str(yaw))
+        print("Pitch: " + str(pitch))
+        print("Roll: " + str(roll))
+        print("======================")
+        #shoulderServos(int(yaw), int(pitch), int(roll))
+
         if (gyroData[0] == ">0<"):
-            print("Yaw: " + str(yaw))
-            print("Pitch: " + str(pitch))
-            print("Roll: " + str(roll))
-            print("======================")
-            shoulderServos(int(yaw), int(pitch), int(roll))
+            alignServo(0, yaw)
+            alignServo(1, pitch)
+        elif (gyroData[0] == ">1<"):
+            alignServo(2, yaw)
+        elif (gyroData[0] == ">2<"):
+            alignServo(3, roll)
+            
     else:
         print(data)
