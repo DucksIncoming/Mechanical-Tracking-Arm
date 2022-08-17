@@ -8,7 +8,7 @@ SENSOR_COM = "COM9"
 BAUD = 115200
 
 # Servo Pins (Digital)
-ShoulderPitch = 2
+ShoulderYaw = 4
 
 try:
     board = Arduino(SERVO_COM)
@@ -19,8 +19,8 @@ try:
     buffer = serial.Serial(SENSOR_COM, BAUD)
     buffer.timeout = 1
 
-    board.digital[ShoulderPitch].mode = SERVO
-    board.digital[ShoulderPitch].write(90)
+    board.digital[ShoulderYaw].mode = SERVO
+    board.digital[ShoulderYaw].write(90)
 except:
     print("Arduino board not plugged in! (Or not accessible on specified port)")
     time.sleep(5)
@@ -29,25 +29,28 @@ except:
 def clamp(val, minimum, maximum):
     return max(minimum, min(val, maximum))
 
-def shoulderServos(pitch): 
+def shoulderServos(yaw, pitch, roll): 
     pitch = clamp(pitch, 0, 180)
-    board.digital[ShoulderPitch].mode = SERVO
-    board.digital[ShoulderPitch].write(pitch)
+    board.digital[ShoulderYaw].mode = SERVO
+    board.digital[ShoulderYaw].write(clamp((90 + yaw), 0, 200))
 
 while True:
     buffer.flushInput()
     data = buffer.readline().decode('ascii')
-    if (data.__contains__('ypr')):
+    if (data.__contains__('>')):
         print("\n\n\n")
         print("=== GYROSCOPE DATA ===")
-        gyroData = re.split(r'\t+', data)
+        gyroData = data.split(",")
+
         yaw = float(gyroData[1])
         pitch = float(gyroData[2])
         roll = float(gyroData[3])
-        print("Yaw: " + str(yaw))
-        print("Pitch: " + str(pitch))
-        print("Roll: " + str(roll))
-        print("======================")
-        shoulderServos(int(pitch))
+
+        if (gyroData[0] == ">0<"):
+            print("Yaw: " + str(yaw))
+            print("Pitch: " + str(pitch))
+            print("Roll: " + str(roll))
+            print("======================")
+            shoulderServos(int(yaw), int(pitch), int(roll))
     else:
         print(data)
